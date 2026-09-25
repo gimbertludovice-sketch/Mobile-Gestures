@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Touch Gesture Simulator - Gimbert Ludovice</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99,102,241,0.3);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99,102,241,0.6);
+        }
+
+        /* Mobile device frame scaling and styling */
+        .phone-frame {
+            width: 393px;
+            height: 852px;
+            border-radius: 50px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 0 12px #1e293b;
+            position: relative;
+            overflow: hidden;
+            background-color: #0f172a;
+        }
+
+        /* Animated Heart Effect */
+        @keyframes heartBurst {
+            0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+            50% { transform: scale(1.3) rotate(0deg); opacity: 1; }
+            70% { transform: scale(0.95) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0; }
+        }
+
+        .animate-heart-burst {
+            animation: heartBurst 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* Ripple effect */
+        @keyframes rippleEffect {
+            0% { width: 0px; height: 0px; opacity: 0.6; }
+            100% { width: 250px; height: 250px; opacity: 0; }
+        }
+
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            animation: rippleEffect 0.6s linear;
+        }
+
+        /* Dynamic scale transitions */
+        .smooth-zoom {
+            transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Prevent unwanted text highlight during touch/drag */
+        .no-select {
+            user-select: none;
+            -webkit-user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans transition-colors duration-300 min-h-screen flex flex-col">
+
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 shadow-sm transition-colors duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                <!-- Title & Badge -->
+                <div class="flex items-center space-x-3">
+                    <div class="p-2.5 bg-brand-500 text-white rounded-xl shadow-lg shadow-brand-500/30">
+                        <i class="fa-solid fa-mobile-screen-button text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold leading-tight">Mobile Gesture Identifier & App Prototype</h1>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Interactive UI/UX Touch Action Demonstration</p>
+                    </div>
+                </div>
+
+                <!-- Academic Metadata Card -->
+                <div class="flex flex-wrap items-center gap-2 text-xs">
+                    <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span class="text-slate-400 dark:text-slate-500 font-medium">Student:</span>
+                        <span class="font-semibold text-slate-700 dark:text-slate-200 ml-1">Gimbert Ludovice</span>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span class="text-slate-400 dark:text-slate-500 font-medium">Section:</span>
+                        <span class="font-semibold text-slate-700 dark:text-slate-200 ml-1">WITMWD3M1</span>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span class="text-slate-400 dark:text-slate-500 font-medium">Date:</span>
+                        <span class="font-semibold text-slate-700 dark:text-slate-200 ml-1">Sept 25, 2026</span>
+                    </div>
+                    <div class="bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span class="text-slate-400 dark:text-slate-500 font-medium">Prof:</span>
+                        <span class="font-semibold text-slate-700 dark:text-slate-200 ml-1">Mr. John Kyle Martin</span>
+                    </div>
+
+                    <!-- Theme Toggle -->
+                    <button id="themeToggleBtn" onclick="toggleDarkMode()" class="p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-lg transition-colors ml-2" title="Toggle Theme">
+                        <i id="themeIcon" class="fa-solid fa-moon text-sm"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col lg:flex-row gap-8 items-start">
+        
+        <div class="w-full lg:w-80 flex flex-col gap-6 order-2 lg:order-1">
+            
+            <!-- Screen Mode Switcher Card -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group text-brand-500"></i> Screen Mode Preset
+                </h2>
+                <div class="flex flex-col gap-2">
+                    <button onclick="switchScreen('screen1')" id="nav-screen1" class="screen-nav-btn active flex items-center justify-between p-3 rounded-xl border border-brand-500/30 bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 font-medium text-xs transition-all">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-house text-base"></i>
+                            <span>Screen 1: Feed & Swipe</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                    </button>
+                    <button onclick="switchScreen('screen2')" id="nav-screen2" class="screen-nav-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 font-medium text-xs transition-all">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-heart text-base"></i>
+                            <span>Screen 2: Double Tap & Hold</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                    </button>
+                    <button onclick="switchScreen('screen3')" id="nav-screen3" class="screen-nav-btn flex items-center justify-between p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-slate-600 dark:text-slate-300 font-medium text-xs transition-all">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid fa-magnifying-glass-plus text-base"></i>
+                            <span>Screen 3: Pinch & Zoom</span>
+                        </div>
+                        <i class="fa-solid fa-chevron-right text-xs opacity-70"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Touch Action Reference & Guide Table -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex-1">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-hand-pointer text-brand-500"></i> Gesture Reference Guide
+                </h2>
+                
+                <div class="space-y-3 text-xs">
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-arrow-pointer text-indigo-500"></i> Single Tap</span>
+                            <span class="px-2 py-0.5 rounded bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px]">Primary</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Select items, activate "Add to Cart", or navigate screens.</p>
+                    </div>
+
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-heart text-rose-500"></i> Double Tap</span>
+                            <span class="px-2 py-0.5 rounded bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-400 text-[10px]">Quick Action</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Instant favorite/like toggle with heart burst visual effect.</p>
+                    </div>
+
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-regular fa-hand-back-fist text-amber-500"></i> Long Press</span>
+                            <span class="px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 text-[10px]">Contextual</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Hold element for 600ms to launch quick preview modal menu.</p>
+                    </div>
+
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-arrows-left-right text-emerald-500"></i> Horizontal Swipe</span>
+                            <span class="px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 text-[10px]">Carousel</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Drag left/right to scroll through featured product banners.</p>
+                    </div>
+
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-arrow-down-long text-sky-500"></i> Pull-to-Refresh</span>
+                            <span class="px-2 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 text-[10px]">API Trigger</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Drag down from feed top to refresh product inventory data.</p>
+                    </div>
+
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
+                        <div class="flex items-center justify-between font-semibold text-slate-800 dark:text-slate-200">
+                            <span class="flex items-center gap-1.5"><i class="fa-solid fa-expand text-violet-500"></i> Pinch & Zoom</span>
+                            <span class="px-2 py-0.5 rounded bg-violet-100 dark:bg-violet-950 text-violet-600 dark:text-violet-400 text-[10px]">Transform</span>
+                        </div>
+                        <p class="text-slate-500 dark:text-slate-400 mt-1">Wheel scroll / pinch multi-touch to scale image viewport.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-1 flex flex-col items-center justify-center order-1 lg:order-2 w-full">
+            
+            <div class="phone-frame shadow-2xl relative border-4 border-slate-800 dark:border-slate-700 bg-slate-900 text-slate-100 flex flex-col no-select">
+                
+                <!-- Dynamic Island / Top Notch -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-50 flex items-center justify-center gap-2">
+                    <div class="w-2.5 h-2.5 rounded-full bg-slate-900 border border-slate-800"></div>
+                    <div class="w-3 h-3 rounded-full bg-slate-950 flex items-center justify-center">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-900/60"></div>
+                    </div>
+                </div>
+
+                <!-- Status Bar -->
+                <div class="w-full pt-3 px-6 pb-2 flex justify-between items-center text-[11px] font-semibold text-slate-300 z-40 select-none">
+                    <span>9:41</span>
+                    <div class="flex items-center gap-1.5">
+                        <i class="fa-solid fa-signal text-[10px]"></i>
+                        <i class="fa-solid fa-wifi text-[10px]"></i>
+                        <i class="fa-solid fa-battery-full text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- App Header View -->
+                <div class="px-4 py-2 border-b border-slate-800 bg-slate-900/90 backdrop-blur z-30 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <h3 class="font-bold text-sm tracking-tight text-white">Gesture Showcase</h3>
+                    </div>
+                    <span id="activeScreenBadge" class="text-[10px] bg-brand-500/20 text-brand-300 px-2 py-0.5 rounded-full font-mono border border-brand-500/30">Screen 1</span>
+                </div>
+
+                <div id="screen1-view" class="screen-container flex-1 overflow-y-auto relative p-4 space-y-4">
+                    
+                    <!-- Pull To Refresh Loader Visualizer -->
+                    <div id="pullToRefreshBar" class="h-0 overflow-hidden flex items-center justify-center transition-all duration-300 bg-brand-950/40 rounded-xl border border-brand-500/20 text-brand-300 text-xs gap-2">
+                        <i id="refreshSpinner" class="fa-solid fa-rotate text-brand-400"></i>
+                        <span id="refreshText">Pull down to refresh feed...</span>
+                    </div>
+
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" placeholder="Search gadgets or gestures..." class="w-full bg-slate-800/80 border border-slate-700/60 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500" readonly>
+                    </div>
+
+                    <!-- Swipeable Carousel Section -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5 px-1">
+                            <span class="text-xs font-semibold text-slate-300">Featured Carousel</span>
+                            <span class="text-[10px] text-brand-400 flex items-center gap-1">
+                                <i class="fa-solid fa-hand-pointer"></i> Horizontal Swipe
+                            </span>
+                        </div>
+                        
+                        <!-- Carousel Wrapper -->
+                        <div id="carouselWrapper" class="relative overflow-hidden rounded-2xl bg-slate-800 border border-slate-700/60 cursor-grab active:cursor-grabbing">
+                            <div id="carouselTrack" class="flex transition-transform duration-300 ease-out" style="transform: translateX(0%);">
+                                <!-- Banner 1 -->
+                                <div class="w-full shrink-0 p-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex flex-col justify-between h-36">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded w-fit">Swipe Demo 1/3</span>
+                                    <div>
+                                        <h4 class="font-extrabold text-base leading-snug">Pro Wireless Earbuds</h4>
+                                        <p class="text-xs text-indigo-100 opacity-90">Active Noise Cancellation + Spatial Audio</p>
+                                    </div>
+                                    <span class="text-xs font-bold">$199.99</span>
+                                </div>
+                                <!-- Banner 2 -->
+                                <div class="w-full shrink-0 p-4 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex flex-col justify-between h-36">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded w-fit">Swipe Demo 2/3</span>
+                                    <div>
+                                        <h4 class="font-extrabold text-base leading-snug">Smart Watch Series 9</h4>
+                                        <p class="text-xs text-emerald-100 opacity-90">Always-On Retina Display</p>
+                                    </div>
+                                    <span class="text-xs font-bold">$349.00</span>
+                                </div>
+                                <!-- Banner 3 -->
+                                <div class="w-full shrink-0 p-4 bg-gradient-to-r from-amber-600 to-rose-600 text-white flex flex-col justify-between h-36">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2 py-0.5 rounded w-fit">Swipe Demo 3/3</span>
+                                    <div>
+                                        <h4 class="font-extrabold text-base leading-snug">Minimalist Laptop Stand</h4>
+                                        <p class="text-xs text-amber-100 opacity-90">Ergonomic Anodized Aluminum</p>
+                                    </div>
+                                    <span class="text-xs font-bold">$59.50</span>
+                                </div>
+                            </div>
+                            <!-- Carousel Dots Indicator -->
+                            <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                                <span id="dot-0" class="w-2 h-2 rounded-full bg-white transition-all"></span>
+                                <span id="dot-1" class="w-2 h-2 rounded-full bg-white/40 transition-all"></span>
+                                <span id="dot-2" class="w-2 h-2 rounded-full bg-white/40 transition-all"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Product Grid View -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2 px-1">
+                            <span class="text-xs font-semibold text-slate-300">Catalog (Tap Action)</span>
+                            <span class="text-[10px] text-slate-400">Single Tap to Add</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <!-- Product 1 -->
+                            <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2.5 flex flex-col justify-between hover:border-slate-600 transition">
+                                <div class="h-24 bg-slate-700/50 rounded-lg mb-2 flex items-center justify-center text-slate-400 text-3xl">
+                                    <i class="fa-solid fa-headphones"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-semibold text-white truncate">Audio Headphones</h5>
+                                    <p class="text-[10px] text-slate-400">$89.00</p>
+                                </div>
+                                <button onclick="triggerSingleTap('Audio Headphones')" class="mt-2 w-full py-1.5 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-cart-plus text-[10px]"></i> Add to Cart
+                                </button>
+                            </div>
+
+                            <!-- Product 2 -->
+                            <div class="bg-slate-800/60 border border-slate-700/50 rounded-xl p-2.5 flex flex-col justify-between hover:border-slate-600 transition">
+                                <div class="h-24 bg-slate-700/50 rounded-lg mb-2 flex items-center justify-center text-slate-400 text-3xl">
+                                    <i class="fa-solid fa-camera"></i>
+                                </div>
+                                <div>
+                                    <h5 class="text-xs font-semibold text-white truncate">4K Action Cam</h5>
+                                    <p class="text-[10px] text-slate-400">$240.00</p>
+                                </div>
+                                <button onclick="triggerSingleTap('4K Action Cam')" class="mt-2 w-full py-1.5 bg-brand-600 hover:bg-brand-500 active:scale-95 text-white rounded-lg text-xs font-medium transition flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-cart-plus text-[10px]"></i> Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="screen2-view" class="screen-container hidden flex-1 overflow-y-auto relative p-4 space-y-4">
+                    
+                    <div class="bg-slate-800/40 p-3 rounded-xl border border-slate-700/50 text-center">
+                        <span class="text-xs font-semibold text-slate-200 block mb-1">Interactive Target Card</span>
+                        <p class="text-[11px] text-slate-400">
+                            <strong>Double-Tap</strong> image to Like | <strong>Long-Press (Hold 600ms)</strong> for Quick Menu
+                        </p>
+                    </div>
+
+                    <!-- Double Tap & Long Press Area -->
+                    <div id="gestureCardTarget" class="relative bg-slate-800 rounded-2xl border border-slate-700/80 overflow-hidden shadow-lg cursor-pointer transition active:scale-[0.99] select-none">
+                        
+                        <!-- Image Area -->
+                        <div class="relative h-60 bg-gradient-to-tr from-slate-900 via-indigo-950 to-slate-800 flex items-center justify-center overflow-hidden">
+                            <i class="fa-solid fa-gem text-7xl text-indigo-400/40"></i>
+                            
+                            <!-- Heart Burst Effect Element -->
+                            <div id="heartBurstEffect" class="hidden absolute inset-0 flex items-center justify-center bg-black/30 backdrop-blur-[1px]">
+                                <i class="fa-solid fa-heart text-7xl text-rose-500 drop-shadow-lg animate-heart-burst"></i>
+                            </div>
+
+                            <!-- Overlay instruction badge -->
+                            <div class="absolute bottom-3 left-3 bg-slate-900/80 backdrop-blur border border-slate-700 px-2.5 py-1 rounded-full text-[10px] text-slate-300 flex items-center gap-1.5">
+                                <i class="fa-solid fa-fingerprint text-brand-400"></i> Touch Target
+                            </div>
+                        </div>
+
+                        <!-- Card Metadata -->
+                        <div class="p-4 space-y-2">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h4 class="font-bold text-sm text-white">Luxury Sapphire Chronograph</h4>
+                                    <p class="text-xs text-slate-400">Limited Edition Timepiece</p>
+                                </div>
+                                <span class="font-mono text-sm text-brand-400 font-bold">$1,250</span>
+                            </div>
+
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-700/50 text-xs">
+                                <div class="flex items-center gap-1 text-slate-400">
+                                    <button id="likeCounterBtn" class="flex items-center gap-1 hover:text-rose-400 transition">
+                                        <i id="likeIcon" class="fa-regular fa-heart text-rose-500"></i>
+                                        <span id="likeCount">128</span> Likes
+                                    </button>
+                                </div>
+                                <span class="text-[10px] text-slate-500 italic">Hold for contextual options</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Long Press Modal Overlay -->
+                    <div id="contextMenuOverlay" class="hidden absolute inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-end justify-center p-4 transition-all">
+                        <div class="w-full bg-slate-900 border border-slate-700 rounded-2xl p-4 space-y-3 shadow-2xl animate-in fade-in slide-in-from-bottom duration-200">
+                            <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+                                <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                                    <i class="fa-solid fa-sliders text-brand-400"></i> Quick Actions Menu
+                                </span>
+                                <button onclick="closeContextMenu()" class="text-slate-400 hover:text-white p-1">
+                                    <i class="fa-solid fa-xmark text-sm"></i>
+                                </button>
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <button onclick="selectContextOption('Quick Preview')" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-800 text-xs text-slate-200 transition">
+                                    <i class="fa-solid fa-eye text-indigo-400 w-4"></i> Quick Preview
+                                </button>
+                                <button onclick="selectContextOption('Share Item')" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-800 text-xs text-slate-200 transition">
+                                    <i class="fa-solid fa-share-nodes text-emerald-400 w-4"></i> Share Product Link
+                                </button>
+                                <button onclick="selectContextOption('Save for Later')" class="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-slate-800 text-xs text-slate-200 transition">
+                                    <i class="fa-solid fa-bookmark text-amber-400 w-4"></i> Save for Later
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="screen3-view" class="screen-container hidden flex-1 overflow-hidden relative flex flex-col p-4">
+                    
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-semibold text-slate-300">Pinch & Zoom Viewer</span>
+                        <span id="zoomScaleBadge" class="text-xs font-mono font-bold bg-violet-950 text-violet-300 px-2 py-0.5 rounded border border-violet-800">
+                            Scale: 100%
+                        </span>
+                    </div>
+
+                    <!-- Zoom Canvas Viewport Container -->
+                    <div id="zoomViewport" class="flex-1 bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden relative flex items-center justify-center cursor-grab">
+                        
+                        <!-- Transformable Target Container -->
+                        <div id="zoomTarget" class="smooth-zoom flex flex-col items-center justify-center text-center p-6 space-y-3">
+                            <div class="w-48 h-48 rounded-2xl bg-gradient-to-tr from-violet-600 via-indigo-500 to-purple-400 flex items-center justify-center shadow-xl">
+                                <i class="fa-solid fa-microchip text-7xl text-white/90 drop-shadow"></i>
+                            </div>
+                            <div class="space-y-1">
+                                <h4 class="text-sm font-bold text-white">NextGen AI Processor Chip</h4>
+                                <p class="text-[10px] text-slate-400">High Resolution Component Detail</p>
+                            </div>
+                        </div>
+
+                        <!-- Touch Indicator Overlay -->
+                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 bg-slate-900/80 backdrop-blur px-3 py-1 rounded-full text-[10px] text-slate-400 border border-slate-700/60 pointer-events-none">
+                            Use Mouse Scroll or Pinch Gestures
+                        </div>
+                    </div>
+
+                    <!-- Quick Zoom Preset Bar -->
+                    <div class="mt-3 grid grid-cols-4 gap-2">
+                        <button onclick="setZoomScale(1)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-mono font-semibold text-slate-300 transition">100%</button>
+                        <button onclick="setZoomScale(1.5)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-mono font-semibold text-slate-300 transition">150%</button>
+                        <button onclick="setZoomScale(2)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-mono font-semibold text-slate-300 transition">200%</button>
+                        <button onclick="setZoomScale(3)" class="py-1.5 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-mono font-semibold text-slate-300 transition">300%</button>
+                    </div>
+                </div>
+
+                <!-- Bottom Home Bar Indicator -->
+                <div class="w-full py-2 bg-slate-900 flex justify-center items-center z-40">
+                    <div class="w-32 h-1 bg-slate-700 rounded-full"></div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="w-full lg:w-80 flex flex-col gap-4 order-3">
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col h-[500px]">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-brand-500"></i> Live Gesture Log
+                    </h2>
+                    <button onclick="clearGestureLogs()" class="text-[11px] text-slate-400 hover:text-rose-500 transition flex items-center gap-1">
+                        <i class="fa-solid fa-trash-can"></i> Clear
+                    </button>
+                </div>
+
+                <!-- Dynamic Log Feed Window -->
+                <div id="gestureLogFeed" class="flex-1 overflow-y-auto my-3 space-y-2 pr-1 font-mono text-xs">
+                    <!-- Log entries stream here -->
+                    <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 italic text-[11px]">
+                        System ready. Interact with the mobile frame to trigger and record real-time gesture logs...
+                    </div>
+                </div>
+
+                <!-- Toast Status Notification Bar -->
+                <div id="statusToast" class="bg-brand-50 dark:bg-brand-950/60 border border-brand-200 dark:border-brand-800 text-brand-700 dark:text-brand-300 p-2.5 rounded-xl text-xs flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-circle-info text-brand-500"></i>
+                    <span id="toastMessage" class="truncate">Simulator initialized successfully.</span>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let currentScreen = 'screen1';
+        let likeCount = 128;
+        let isLiked = false;
+        let currentZoomScale = 1;
+        let longPressTimer = null;
+
+        // Carousel variables
+        let carouselIndex = 0;
+        let startX = 0;
+        let isDraggingCarousel = false;
+
+        // Pull to refresh variables
+        let pullStartY = 0;
+        let isPulling = false;
+
+        function switchScreen(screenId) {
+            currentScreen = screenId;
+
+            // Hide all views
+            document.querySelectorAll('.screen-container').forEach(el => el.classList.add('hidden'));
+            
+            // Show target view
+            document.getElementById(`${screenId}-view`).classList.remove('hidden');
+
+            // Update Nav Buttons
+            document.querySelectorAll('.screen-nav-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-brand-500/30', 'bg-brand-50', 'dark:bg-brand-950/40', 'text-brand-600', 'dark:text-brand-400');
+                btn.classList.add('border-slate-200', 'dark:border-slate-800', 'text-slate-600', 'dark:text-slate-300');
+            });
+
+            const activeBtn = document.getElementById(`nav-${screenId}`);
+            activeBtn.classList.add('active', 'border-brand-500/30', 'bg-brand-50', 'dark:bg-brand-950/40', 'text-brand-600', 'dark:text-brand-400');
+
+            // Update Badge
+            const badgeText = screenId === 'screen1' ? 'Screen 1: Feed' : screenId === 'screen2' ? 'Screen 2: Touch' : 'Screen 3: Zoom';
+            document.getElementById('activeScreenBadge').innerText = badgeText;
+
+            logGesture('Screen Switch', `Navigated to ${badgeText}`);
+        }
+
+        function logGesture(action, purpose) {
+            const logFeed = document.getElementById('gestureLogFeed');
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+            const logEntry = document.createElement('div');
+            logEntry.className = 'p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/60 animate-in fade-in slide-in-from-top-1 duration-150';
+            
+            logEntry.innerHTML = `
+                <div class="flex items-center justify-between text-[10px] text-slate-400 mb-0.5">
+                    <span class="font-bold text-brand-500 uppercase">${action}</span>
+                    <span>${timestamp}</span>
+                </div>
+                <p class="text-[11px] text-slate-700 dark:text-slate-200 font-sans leading-tight">${purpose}</p>
+            `;
+
+            // Remove placeholder if exists
+            if (logFeed.children[0]?.classList.contains('italic')) {
+                logFeed.innerHTML = '';
+            }
+
+            logFeed.prepend(logEntry);
+
+            // Trigger Toast Update
+            const toastMsg = document.getElementById('toastMessage');
+            toastMsg.innerText = `Detected [${action}]: ${purpose}`;
+        }
+
+        function clearGestureLogs() {
+            const logFeed = document.getElementById('gestureLogFeed');
+            logFeed.innerHTML = `
+                <div class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 text-slate-500 dark:text-slate-400 italic text-[11px]">
+                    Logs cleared. Interact with mobile screen to record actions...
+                </div>
+            `;
+            document.getElementById('toastMessage').innerText = 'Logs cleared.';
+        }
+
+        function triggerSingleTap(itemName) {
+            logGesture('Single Tap', `Selected "${itemName}" -> Executed Add-to-Cart workflow.`);
+        }
+
+        const carouselTrack = document.getElementById('carouselTrack');
+        const carouselWrapper = document.getElementById('carouselWrapper');
+
+        carouselWrapper.addEventListener('mousedown', (e) => {
+            isDraggingCarousel = true;
+            startX = e.clientX;
+        });
+
+        carouselWrapper.addEventListener('mouseup', (e) => {
+            if (!isDraggingCarousel) return;
+            isDraggingCarousel = false;
+            const diffX = e.clientX - startX;
+            handleCarouselSwipe(diffX);
+        });
+
+        carouselWrapper.addEventListener('mouseleave', () => { isDraggingCarousel = false; });
+
+        // Touch event handlers for mobile devices
+        carouselWrapper.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        });
+
+        carouselWrapper.addEventListener('touchend', (e) => {
+            const diffX = e.changedTouches[0].clientX - startX;
+            handleCarouselSwipe(diffX);
+        });
+
+        function handleCarouselSwipe(diffX) {
+            if (Math.abs(diffX) > 30) {
+                if (diffX < 0 && carouselIndex < 2) {
+                    carouselIndex++;
+                    logGesture('Swipe Left', `Navigated carousel forward to Slide ${carouselIndex + 1}`);
+                } else if (diffX > 0 && carouselIndex > 0) {
+                    carouselIndex--;
+                    logGesture('Swipe Right', `Navigated carousel backward to Slide ${carouselIndex + 1}`);
+                }
+                updateCarouselUI();
+            }
+        }
+
+        function updateCarouselUI() {
+            carouselTrack.style.transform = `translateX(-${carouselIndex * 100}%)`;
+            for (let i = 0; i < 3; i++) {
+                const dot = document.getElementById(`dot-${i}`);
+                if (i === carouselIndex) {
+                    dot.className = 'w-4 h-2 rounded-full bg-white transition-all';
+                } else {
+                    dot.className = 'w-2 h-2 rounded-full bg-white/40 transition-all';
+                }
+            }
+        }
+
+        const screen1 = document.getElementById('screen1-view');
+        const refreshBar = document.getElementById('pullToRefreshBar');
+        const refreshSpinner = document.getElementById('refreshSpinner');
+        const refreshText = document.getElementById('refreshText');
+
+        screen1.addEventListener('touchstart', (e) => {
+            if (screen1.scrollTop === 0) {
+                pullStartY = e.touches[0].clientY;
+                isPulling = true;
+            }
+        });
+
+        screen1.addEventListener('touchmove', (e) => {
+            if (!isPulling) return;
+            const currentY = e.touches[0].clientY;
+            const pullDistance = currentY - pullStartY;
+
+            if (pullDistance > 0 && pullDistance < 120) {
+                refreshBar.style.height = `${pullDistance / 2}px`;
+            }
+        });
+
+        screen1.addEventListener('touchend', (e) => {
+            if (!isPulling) return;
+            isPulling = false;
+            const refreshBarHeight = parseInt(refreshBar.style.height || '0');
+
+            if (refreshBarHeight > 35) {
+                refreshSpinner.classList.add('animate-spin');
+                refreshText.innerText = 'Updating inventory...';
+                logGesture('Pull to Refresh', 'Triggered data reload request for feed items.');
+
+                setTimeout(() => {
+                    refreshBar.style.height = '0px';
+                    refreshSpinner.classList.remove('animate-spin');
+                    refreshText.innerText = 'Pull down to refresh feed...';
+                }, 1200);
+            } else {
+                refreshBar.style.height = '0px';
+            }
+        });
+
+        const targetCard = document.getElementById('gestureCardTarget');
+        let lastTapTime = 0;
+
+        targetCard.addEventListener('click', (e) => {
+            const currentTime = new Date().getTime();
+            const tapLength = currentTime - lastTapTime;
+
+            if (tapLength < 300 && tapLength > 0) {
+                // Double Tap Triggered
+                triggerDoubleTapHeart();
+            }
+            lastTapTime = currentTime;
+        });
+
+        // Long Press Implementation
+        targetCard.addEventListener('mousedown', startLongPress);
+        targetCard.addEventListener('mouseup', cancelLongPress);
+        targetCard.addEventListener('mouseleave', cancelLongPress);
+        targetCard.addEventListener('touchstart', startLongPress);
+        targetCard.addEventListener('touchend', cancelLongPress);
+
+        function startLongPress() {
+            longPressTimer = setTimeout(() => {
+                document.getElementById('contextMenuOverlay').classList.remove('hidden');
+                logGesture('Long Press', 'Opened contextual options overlay menu.');
+            }, 600);
+        }
+
+        function cancelLongPress() {
+            if (longPressTimer) clearTimeout(longPressTimer);
+        }
+
+        function triggerDoubleTapHeart() {
+            const heartBurst = document.getElementById('heartBurstEffect');
+            heartBurst.classList.remove('hidden');
+
+            isLiked = !isLiked;
+            likeCount = isLiked ? likeCount + 1 : likeCount - 1;
+
+            document.getElementById('likeCount').innerText = likeCount;
+            const likeIcon = document.getElementById('likeIcon');
+
+            if (isLiked) {
+                likeIcon.className = 'fa-solid fa-heart text-rose-500';
+            } else {
+                likeIcon.className = 'fa-regular fa-heart text-rose-500';
+            }
+
+            logGesture('Double Tap', `Liked target item. Favorite status set to ${isLiked}.`);
+
+            setTimeout(() => {
+                heartBurst.classList.add('hidden');
+            }, 800);
+        }
+
+        function closeContextMenu() {
+            document.getElementById('contextMenuOverlay').classList.add('hidden');
+        }
+
+        function selectContextOption(optionName) {
+            closeContextMenu();
+            logGesture('Context Menu Select', `Executed option: "${optionName}"`);
+        }
+
+        const zoomViewport = document.getElementById('zoomViewport');
+        const zoomTarget = document.getElementById('zoomTarget');
+
+        zoomViewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+                setZoomScale(Math.min(currentZoomScale + 0.2, 3.5));
+            } else {
+                setZoomScale(Math.max(currentZoomScale - 0.2, 0.8));
+            }
+            logGesture('Pinch / Zoom', `Adjusted image zoom scale to ${(currentZoomScale * 100).toFixed(0)}%`);
+        });
+
+        function setZoomScale(scale) {
+            currentZoomScale = scale;
+            zoomTarget.style.transform = `scale(${scale})`;
+            document.getElementById('zoomScaleBadge').innerText = `Scale: ${(scale * 100).toFixed(0)}%`;
+        }
+
+        function toggleDarkMode() {
+            const html = document.documentElement;
+            const themeIcon = document.getElementById('themeIcon');
+
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                themeIcon.className = 'fa-solid fa-moon text-sm';
+            } else {
+                html.classList.add('dark');
+                themeIcon.className = 'fa-solid fa-sun text-sm text-amber-400';
+            }
+        }
+    </script>
+</body>
+</html>
